@@ -1,0 +1,107 @@
+﻿{% extends "base.html" %}
+{% block title %}Transactions — Admin Secure e-Bank{% endblock %}
+{% block page_title %}Toutes les transactions{% endblock %}
+
+{% block content %}
+<div class="fade-in">
+  <div class="page-header">
+    <div class="page-header-info">
+      <h2>Transactions</h2>
+      <p>{{ transactions|length }} transaction(s){{ ' filtrées' if filter_status }}</p>
+    </div>
+  </div>
+
+  {# ── Filter tabs ── #}
+  <div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap">
+    <a href="{{ url_for('admin_transactions') }}" class="btn btn-sm {{ 'btn-primary' if not filter_status else 'btn-ghost' }}">
+      Toutes
+    </a>
+    <a href="{{ url_for('admin_transactions') }}?status=pending" class="btn btn-sm {{ 'btn-warning' if filter_status=='pending' else 'btn-ghost' }}">
+      <i class="bi bi-hourglass-split"></i> En attente
+    </a>
+    <a href="{{ url_for('admin_transactions') }}?status=completed" class="btn btn-sm {{ 'btn-success' if filter_status=='completed' else 'btn-ghost' }}">
+      <i class="bi bi-check-circle"></i> Complétées
+    </a>
+    <a href="{{ url_for('admin_transactions') }}?status=rejected" class="btn btn-sm {{ 'btn-danger' if filter_status=='rejected' else 'btn-ghost' }}">
+      <i class="bi bi-x-circle"></i> Rejetées
+    </a>
+    <input type="text" id="txSearch" class="form-control" placeholder="🔍 Rechercher..."
+           oninput="filterTx(this.value)" style="max-width:250px;margin-left:auto">
+  </div>
+
+  <div class="table-container">
+    {% if transactions %}
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Type</th>
+          <th>Expéditeur</th>
+          <th>Destinataire</th>
+          <th>Montant</th>
+          <th>Description</th>
+          <th>Statut</th>
+          <th>Date</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for tx in transactions %}
+        <tr class="tx-row">
+          <td class="td-muted">#{{ tx.id }}</td>
+          <td>
+            <span class="badge badge-{{ tx.type }}">{{ tx.type.title() }}</span>
+          </td>
+          <td>
+            {% if tx.from_number %}
+            <div style="font-size:13px;font-weight:500">{{ tx.from_name or '—' }}</div>
+            <div class="acc-number" style="font-size:11px">{{ tx.from_number }}</div>
+            {% else %}
+            <span class="td-muted">—</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if tx.to_number %}
+            <div style="font-size:13px;font-weight:500">{{ tx.to_name or '—' }}</div>
+            <div class="acc-number" style="font-size:11px">{{ tx.to_number }}</div>
+            {% else %}
+            <span class="td-muted">—</span>
+            {% endif %}
+          </td>
+          <td>
+            <span style="font-weight:700;font-size:14px;color:var(--text)">
+              {{ '{:,.2f}'.format(tx.amount) }} DNT
+            </span>
+          </td>
+          <td style="font-size:12px;color:var(--text-muted);max-width:180px">
+            {{ tx.description or '—' }}
+          </td>
+          <td>
+            <span class="badge badge-{{ tx.status }}">
+              {% if tx.status=='pending' %}<i class="bi bi-hourglass-split"></i> En attente
+              {% elif tx.status=='completed' %}<i class="bi bi-check-circle"></i> Complété
+              {% else %}<i class="bi bi-x-circle"></i> Rejeté{% endif %}
+            </span>
+          </td>
+          <td class="td-muted" style="font-size:12px;white-space:nowrap">{{ tx.created_at[:16] }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+      <i class="bi bi-inbox"></i>
+      <p>Aucune transaction{{ ' avec ce filtre' if filter_status }}.</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+function filterTx(q) {
+  q = q.toLowerCase();
+  document.querySelectorAll('.tx-row').forEach(row => {
+    row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+  });
+}
+</script>
+{% endblock %}

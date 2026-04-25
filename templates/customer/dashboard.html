@@ -1,0 +1,166 @@
+﻿{% extends "base.html" %}
+{% block title %}Tableau de bord — Secure e-Bank{% endblock %}
+{% block page_title %}Tableau de bord{% endblock %}
+
+{% block content %}
+<div class="fade-in">
+
+  {# ── Welcome bar ── #}
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:12px">
+    <div>
+      <h2 style="font-size:24px;font-weight:800;letter-spacing:-0.5px">
+        Bonjour, {{ user.full_name.split()[0] }} 👋
+      </h2>
+      <p style="color:var(--text-muted);font-size:13px;margin-top:4px">
+        Voici un aperçu de vos finances
+      </p>
+    </div>
+    <a href="{{ url_for('customer_transfer') }}" class="btn btn-primary">
+      <i class="bi bi-arrow-left-right"></i> Nouveau virement
+    </a>
+  </div>
+
+  {# ── Total balance hero card ── #}
+  <div style="background:linear-gradient(135deg,rgba(79,172,254,0.15),rgba(0,242,254,0.08),rgba(0,201,167,0.05));
+              border:1px solid rgba(79,172,254,0.25);border-radius:var(--r-xl);
+              padding:28px 32px;margin-bottom:24px;position:relative;overflow:hidden">
+    <div style="position:absolute;top:-40px;right:-40px;width:200px;height:200px;
+                background:radial-gradient(circle,rgba(79,172,254,0.15),transparent 70%);pointer-events:none"></div>
+    <div style="font-size:12px;font-weight:600;color:var(--text-muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">
+      Solde total consolidé
+    </div>
+    <div style="font-size:42px;font-weight:900;letter-spacing:-2px;
+                background:linear-gradient(135deg,#fff,var(--blue));
+                -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">
+      <span data-count="{{ total_balance }}">{{ '{:,.2f}'.format(total_balance) }}</span>
+      <span style="font-size:18px;font-weight:600;-webkit-text-fill-color:var(--text-muted)"> DNT</span>
+    </div>
+    <div style="margin-top:16px;display:flex;gap:16px;flex-wrap:wrap">
+      {% for acc in accounts %}
+      <div style="background:rgba(255,255,255,0.06);border:1px solid var(--border);
+                  border-radius:10px;padding:10px 16px;font-size:12px">
+        <div style="color:var(--text-muted)">{{ 'Courant' if acc.account_type=='courant' else 'Épargne' }}</div>
+        <div style="font-weight:700;margin-top:2px">{{ '{:,.2f}'.format(acc.balance) }} DNT</div>
+        <div class="acc-number" style="margin-top:3px">{{ acc.account_number }}</div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  {# ── Stats grid ── #}
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon blue"><i class="bi bi-wallet2"></i></div>
+      <div class="stat-info">
+        <div class="stat-value" data-count="{{ accounts|length }}">{{ accounts|length }}</div>
+        <div class="stat-label">Compte{{ 's' if accounts|length > 1 else '' }}</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon teal"><i class="bi bi-arrow-left-right"></i></div>
+      <div class="stat-info">
+        <div class="stat-value" data-count="{{ recent_tx|length }}">{{ recent_tx|length }}</div>
+        <div class="stat-label">Transactions récentes</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon amber"><i class="bi bi-bell"></i></div>
+      <div class="stat-info">
+        <div class="stat-value" data-count="{{ notifications|length }}">{{ notifications|length }}</div>
+        <div class="stat-label">Notifications non lues</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon purple"><i class="bi bi-shield-check"></i></div>
+      <div class="stat-info">
+        <div class="stat-value">Actif</div>
+        <div class="stat-label">Statut du compte</div>
+      </div>
+    </div>
+  </div>
+
+  {# ── Quick actions ── #}
+  <div class="quick-actions">
+    <a href="{{ url_for('customer_transfer') }}" class="quick-action">
+      <i class="bi bi-send"></i><span>Virement</span>
+    </a>
+    <a href="{{ url_for('customer_accounts') }}" class="quick-action">
+      <i class="bi bi-credit-card-2-front"></i><span>Mes comptes</span>
+    </a>
+    <a href="{{ url_for('customer_history') }}" class="quick-action">
+      <i class="bi bi-clock-history"></i><span>Historique</span>
+    </a>
+    <a href="{{ url_for('customer_loans') }}" class="quick-action">
+      <i class="bi bi-cash-coin"></i><span>Demander un prêt</span>
+    </a>
+    <a href="{{ url_for('customer_profile') }}" class="quick-action">
+      <i class="bi bi-person-gear"></i><span>Mon profil</span>
+    </a>
+  </div>
+
+  {# ── Recent transactions ── #}
+  <div class="table-container">
+    <div class="table-header">
+      <div>
+        <div class="card-title">Transactions récentes</div>
+        <div class="card-subtitle">Vos 5 dernières opérations</div>
+      </div>
+      <a href="{{ url_for('customer_history') }}" class="btn btn-ghost btn-sm">
+        Voir tout <i class="bi bi-arrow-right"></i>
+      </a>
+    </div>
+
+    {% if recent_tx %}
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Montant</th>
+          <th>Statut</th>
+          <th>Date</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for tx in recent_tx %}
+        <tr>
+          <td>
+            {% if tx.from_account_id and tx.from_name == user.full_name %}
+              <span class="badge badge-retrait"><i class="bi bi-arrow-up-right"></i> Sortant</span>
+            {% else %}
+              <span class="badge badge-depot"><i class="bi bi-arrow-down-left"></i> Entrant</span>
+            {% endif %}
+          </td>
+          <td>
+            <div style="font-weight:500">{{ tx.description or 'Virement' }}</div>
+            {% if tx.from_number %}
+            <div class="td-muted">{{ tx.from_number }} → {{ tx.to_number }}</div>
+            {% endif %}
+          </td>
+          <td>
+            <span style="font-weight:700;font-size:15px;
+              color:{{ 'var(--danger)' if tx.from_name == user.full_name and tx.from_account_id else 'var(--teal)' }}">
+              {{ '+' if not (tx.from_name == user.full_name and tx.from_account_id) else '-' }}
+              {{ '{:,.2f}'.format(tx.amount) }} DNT
+            </span>
+          </td>
+          <td>
+            <span class="badge badge-{{ tx.status }}">
+              {{ 'En attente' if tx.status=='pending' else 'Complété' if tx.status=='completed' else 'Rejeté' }}
+            </span>
+          </td>
+          <td class="td-muted">{{ tx.created_at[:16] }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+      <i class="bi bi-inbox"></i>
+      <p>Aucune transaction pour le moment</p>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

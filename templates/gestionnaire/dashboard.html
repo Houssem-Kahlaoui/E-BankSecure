@@ -1,0 +1,137 @@
+﻿{% extends "base.html" %}
+{% block title %}Gestionnaire — Secure e-Bank{% endblock %}
+{% block page_title %}Tableau de bord{% endblock %}
+
+{% block content %}
+<div class="fade-in">
+  <div style="margin-bottom:28px">
+    <h2 style="font-size:24px;font-weight:800;letter-spacing:-0.5px">
+      Espace Gestionnaire
+    </h2>
+    <p style="color:var(--text-muted);font-size:13px;margin-top:4px">
+      Gérez les opérations en attente et les comptes clients
+    </p>
+  </div>
+
+  {# ── Stats ── #}
+  <div class="stats-grid">
+    <div class="stat-card" style="--card-glow:rgba(245,158,11,0.05)" onclick="location.href='{{ url_for('gestionnaire_pending') }}'">
+      <div class="stat-icon amber"><i class="bi bi-hourglass-split"></i></div>
+      <div class="stat-info">
+        <div class="stat-value" data-count="{{ stats.pending_transfers }}">{{ stats.pending_transfers }}</div>
+        <div class="stat-label">Virements en attente</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon teal"><i class="bi bi-check-circle"></i></div>
+      <div class="stat-info">
+        <div class="stat-value" data-count="{{ stats.approved_today }}">{{ stats.approved_today }}</div>
+        <div class="stat-label">Approuvés aujourd'hui</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon danger"><i class="bi bi-x-circle"></i></div>
+      <div class="stat-info">
+        <div class="stat-value" data-count="{{ stats.rejected_today }}">{{ stats.rejected_today }}</div>
+        <div class="stat-label">Rejetés aujourd'hui</div>
+      </div>
+    </div>
+    <div class="stat-card" onclick="location.href='{{ url_for('gestionnaire_loans') }}'">
+      <div class="stat-icon purple"><i class="bi bi-cash-stack"></i></div>
+      <div class="stat-info">
+        <div class="stat-value" data-count="{{ stats.pending_loans }}">{{ stats.pending_loans }}</div>
+        <div class="stat-label">Prêts en attente</div>
+      </div>
+    </div>
+  </div>
+
+  {# ── Quick actions ── #}
+  <div class="grid-2" style="margin-bottom:24px">
+    <a href="{{ url_for('gestionnaire_pending') }}" class="card" style="display:flex;gap:16px;align-items:center;cursor:pointer;text-decoration:none;border-color:{{ 'rgba(245,158,11,0.3)' if stats.pending_transfers > 0 else 'var(--border)' }}">
+      <div style="width:52px;height:52px;border-radius:14px;background:rgba(245,158,11,0.15);
+                  color:var(--amber);display:grid;place-items:center;font-size:24px;flex-shrink:0">
+        <i class="bi bi-hourglass-split"></i>
+      </div>
+      <div>
+        <div style="font-size:16px;font-weight:700">Virements en attente</div>
+        <div style="font-size:13px;color:var(--text-muted);margin-top:3px">
+          {{ stats.pending_transfers }} opération{{ 's' if stats.pending_transfers != 1 }} à traiter
+        </div>
+      </div>
+      <i class="bi bi-chevron-right" style="margin-left:auto;color:var(--text-muted)"></i>
+    </a>
+
+    <a href="{{ url_for('gestionnaire_loans') }}" class="card" style="display:flex;gap:16px;align-items:center;cursor:pointer;text-decoration:none">
+      <div style="width:52px;height:52px;border-radius:14px;background:rgba(168,85,247,0.15);
+                  color:var(--purple);display:grid;place-items:center;font-size:24px;flex-shrink:0">
+        <i class="bi bi-cash-stack"></i>
+      </div>
+      <div>
+        <div style="font-size:16px;font-weight:700">Demandes de prêts</div>
+        <div style="font-size:13px;color:var(--text-muted);margin-top:3px">
+          {{ stats.pending_loans }} demande{{ 's' if stats.pending_loans != 1 }} à examiner
+        </div>
+      </div>
+      <i class="bi bi-chevron-right" style="margin-left:auto;color:var(--text-muted)"></i>
+    </a>
+
+    <a href="{{ url_for('gestionnaire_accounts') }}" class="card" style="display:flex;gap:16px;align-items:center;cursor:pointer;text-decoration:none">
+      <div style="width:52px;height:52px;border-radius:14px;background:rgba(79,172,254,0.15);
+                  color:var(--blue);display:grid;place-items:center;font-size:24px;flex-shrink:0">
+        <i class="bi bi-wallet2"></i>
+      </div>
+      <div>
+        <div style="font-size:16px;font-weight:700">Comptes clients</div>
+        <div style="font-size:13px;color:var(--text-muted);margin-top:3px">
+          Gérer et surveiller les comptes
+        </div>
+      </div>
+      <i class="bi bi-chevron-right" style="margin-left:auto;color:var(--text-muted)"></i>
+    </a>
+
+    <div class="card" style="display:flex;gap:16px;align-items:center">
+      <div style="width:52px;height:52px;border-radius:14px;background:rgba(0,201,167,0.15);
+                  color:var(--teal);display:grid;place-items:center;font-size:24px;flex-shrink:0">
+        <i class="bi bi-speedometer2"></i>
+      </div>
+      <div>
+        <div style="font-size:16px;font-weight:700">Vue globale</div>
+        <div style="font-size:13px;color:var(--text-muted);margin-top:3px">
+          {{ stats.approved_today + stats.rejected_today }} décisions prises aujourd'hui
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# ── Performance indicators ── #}
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title"><i class="bi bi-bar-chart" style="color:var(--blue)"></i> Indicateurs du jour</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px">
+      {% set total_today = stats.approved_today + stats.rejected_today %}
+      {% set approval_rate = (stats.approved_today / total_today * 100) | round(0) if total_today > 0 else 0 %}
+
+      <div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px">
+          <span style="color:var(--text-muted)">Taux d'approbation</span>
+          <span style="font-weight:700;color:var(--teal)">{{ approval_rate }}%</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" style="width:{{ approval_rate }}%;background:linear-gradient(90deg,var(--teal),#00e8c0)"></div>
+        </div>
+      </div>
+
+      <div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px">
+          <span style="color:var(--text-muted)">Virements traités</span>
+          <span style="font-weight:700">{{ total_today }}</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" style="width:{{ [total_today * 10, 100]|min }}%"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

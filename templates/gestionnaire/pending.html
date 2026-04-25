@@ -1,0 +1,111 @@
+﻿{% extends "base.html" %}
+{% block title %}Virements en attente — Secure e-Bank{% endblock %}
+{% block page_title %}Virements en attente{% endblock %}
+
+{% block content %}
+<div class="fade-in">
+  <div class="page-header">
+    <div class="page-header-info">
+      <h2>Virements en attente</h2>
+      <p>{{ transactions|length }} opération{{ 's' if transactions|length != 1 }} à traiter</p>
+    </div>
+  </div>
+
+  {% if transactions %}
+  <div style="display:flex;flex-direction:column;gap:16px">
+    {% for tx in transactions %}
+    <div class="card" style="border-color:rgba(245,158,11,0.2)">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:16px;margin-bottom:16px">
+        <div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+            <span class="badge badge-pending"><i class="bi bi-hourglass-split"></i> En attente</span>
+            <span style="font-size:12px;color:var(--text-muted)">Transaction #{{ tx.id }}</span>
+          </div>
+          <div style="font-size:13px;color:var(--text-muted)">
+            <strong>{{ tx.from_name or '—' }}</strong>
+          </div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:28px;font-weight:900;letter-spacing:-1px;color:var(--text)">
+            {{ '{:,.2f}'.format(tx.amount) }} DNT
+          </div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:2px">
+            <i class="bi bi-clock"></i> {{ tx.created_at[:16] }}
+          </div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+        <div style="background:rgba(255,255,255,0.03);border-radius:10px;padding:12px 14px">
+          <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;letter-spacing:0.5px">COMPTE SOURCE</div>
+          <div class="acc-number">{{ tx.from_number or '—' }}</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:2px">{{ tx.from_name or '' }}</div>
+        </div>
+        <div style="background:rgba(255,255,255,0.03);border-radius:10px;padding:12px 14px">
+          <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;letter-spacing:0.5px">COMPTE DESTINATAIRE</div>
+          <div class="acc-number">{{ tx.to_number or '—' }}</div>
+        </div>
+      </div>
+
+      {% if tx.description %}
+      <div style="font-size:13px;color:var(--text-muted);padding:10px 14px;
+                  background:rgba(255,255,255,0.02);border-radius:8px;margin-bottom:16px">
+        <i class="bi bi-chat-left-text"></i> {{ tx.description }}
+      </div>
+      {% endif %}
+
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        {# Approve #}
+        <form method="POST" action="{{ url_for('gestionnaire_approve', tx_id=tx.id) }}" style="flex:1;min-width:120px">
+          <button type="submit" class="btn btn-success" style="width:100%;justify-content:center"
+                  onclick="return confirm('Approuver ce virement de {{ '{:,.2f}'.format(tx.amount) }} DNT ?')">
+            <i class="bi bi-check-lg"></i> Approuver
+          </button>
+        </form>
+
+        {# Reject #}
+        <button class="btn btn-danger" style="flex:1;min-width:120px;justify-content:center"
+                onclick="openModal('rejectModal{{ tx.id }}')">
+          <i class="bi bi-x-lg"></i> Rejeter
+        </button>
+      </div>
+    </div>
+
+    {# Reject modal for this tx #}
+    <div class="modal-overlay" id="rejectModal{{ tx.id }}">
+      <div class="modal">
+        <div class="modal-header">
+          <div class="modal-title"><i class="bi bi-x-circle" style="color:var(--danger)"></i> Rejeter le virement #{{ tx.id }}</div>
+          <button class="modal-close" onclick="closeModal('rejectModal{{ tx.id }}')"><i class="bi bi-x-lg"></i></button>
+        </div>
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px">
+          Vous êtes sur le point de rejeter un virement de <strong>{{ '{:,.2f}'.format(tx.amount) }} DNT</strong>
+          de <strong>{{ tx.from_name }}</strong>.
+        </p>
+        <form method="POST" action="{{ url_for('gestionnaire_reject', tx_id=tx.id) }}">
+          <div class="form-group">
+            <label class="form-label">Motif du rejet (optionnel)</label>
+            <input type="text" name="comment" class="form-control"
+                   placeholder="Ex: Solde insuffisant, compte suspect...">
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-ghost" onclick="closeModal('rejectModal{{ tx.id }}')">Annuler</button>
+            <button type="submit" class="btn btn-danger"><i class="bi bi-x-circle"></i> Confirmer le rejet</button>
+          </div>
+        </form>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% else %}
+  <div class="empty-state card" style="min-height:360px;display:grid;place-items:center">
+    <div>
+      <i class="bi bi-check2-all" style="font-size:64px;color:var(--teal);display:block;margin-bottom:16px"></i>
+      <p style="font-size:18px;font-weight:700">Aucun virement en attente</p>
+      <p style="font-size:13px;margin-top:8px;color:var(--text-muted)">Toutes les opérations ont été traitées.</p>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

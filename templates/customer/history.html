@@ -1,0 +1,130 @@
+﻿{% extends "base.html" %}
+{% block title %}Historique — Secure e-Bank{% endblock %}
+{% block page_title %}Historique des transactions{% endblock %}
+
+{% block content %}
+<div class="fade-in">
+  <div class="page-header">
+    <div class="page-header-info">
+      <h2>Historique des transactions</h2>
+      <p>{{ total }} transaction{{ 's' if total != 1 }} au total</p>
+    </div>
+  </div>
+
+  {# ── Filters ── #}
+  <form method="GET" action="{{ url_for('customer_history') }}">
+    <div class="filter-bar">
+      <select name="type" class="form-control" onchange="this.form.submit()">
+        <option value="">Tous les types</option>
+        <option value="virement" {{ 'selected' if filter_type=='virement' }}>Virement</option>
+        <option value="depot"    {{ 'selected' if filter_type=='depot'    }}>Dépôt</option>
+        <option value="retrait"  {{ 'selected' if filter_type=='retrait'  }}>Retrait</option>
+      </select>
+      <select name="status" class="form-control" onchange="this.form.submit()">
+        <option value="">Tous les statuts</option>
+        <option value="pending"   {{ 'selected' if filter_status=='pending'   }}>En attente</option>
+        <option value="completed" {{ 'selected' if filter_status=='completed' }}>Complété</option>
+        <option value="rejected"  {{ 'selected' if filter_status=='rejected'  }}>Rejeté</option>
+      </select>
+      {% if filter_type or filter_status %}
+      <a href="{{ url_for('customer_history') }}" class="btn btn-ghost btn-sm">
+        <i class="bi bi-x-circle"></i> Réinitialiser
+      </a>
+      {% endif %}
+    </div>
+  </form>
+
+  {# ── Table ── #}
+  <div class="table-container">
+    {% if transactions %}
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Type</th>
+          <th>De / Vers</th>
+          <th>Description</th>
+          <th>Montant</th>
+          <th>Statut</th>
+          <th>Date</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for tx in transactions %}
+        <tr>
+          <td class="td-muted">#{{ tx.id }}</td>
+          <td>
+            <span class="badge badge-{{ tx.type }}">
+              {{ 'Virement' if tx.type=='virement' else 'Dépôt' if tx.type=='depot' else 'Retrait' }}
+            </span>
+          </td>
+          <td>
+            <div style="font-size:12px">
+              {% if tx.from_number %}
+              <div>
+                <span style="color:var(--text-muted)">De : </span>
+                <span class="acc-number">{{ tx.from_number }}</span>
+                {% if tx.from_name %}<span style="color:var(--text-muted)"> ({{ tx.from_name }})</span>{% endif %}
+              </div>
+              {% endif %}
+              {% if tx.to_number %}
+              <div>
+                <span style="color:var(--text-muted)">Vers : </span>
+                <span class="acc-number">{{ tx.to_number }}</span>
+                {% if tx.to_name %}<span style="color:var(--text-muted)"> ({{ tx.to_name }})</span>{% endif %}
+              </div>
+              {% endif %}
+            </div>
+          </td>
+          <td style="font-size:13px;color:var(--text-muted)">
+            {{ tx.description or '—' }}
+          </td>
+          <td>
+            <span style="font-weight:700;font-size:14px;
+              color:{{ 'var(--danger)' if tx.type=='retrait' or tx.from_name and tx.to_number else 'var(--teal)' }}">
+              {{ '{:,.2f}'.format(tx.amount) }} DNT
+            </span>
+          </td>
+          <td>
+            <span class="badge badge-{{ tx.status }}">
+              {% if tx.status=='pending' %}<i class="bi bi-hourglass-split"></i> En attente
+              {% elif tx.status=='completed' %}<i class="bi bi-check-circle"></i> Complété
+              {% else %}<i class="bi bi-x-circle"></i> Rejeté
+              {% endif %}
+            </span>
+          </td>
+          <td class="td-muted" style="font-size:12px">{{ tx.created_at[:16] }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    {# Pagination #}
+    {% if total_pages > 1 %}
+    <div class="pagination">
+      {% if page > 1 %}
+      <a href="?page={{ page-1 }}&type={{ filter_type }}&status={{ filter_status }}" class="page-btn">
+        <i class="bi bi-chevron-left"></i>
+      </a>
+      {% endif %}
+      {% for p in range(1, total_pages+1) %}
+      <a href="?page={{ p }}&type={{ filter_type }}&status={{ filter_status }}"
+         class="page-btn {{ 'active' if p==page }}">{{ p }}</a>
+      {% endfor %}
+      {% if page < total_pages %}
+      <a href="?page={{ page+1 }}&type={{ filter_type }}&status={{ filter_status }}" class="page-btn">
+        <i class="bi bi-chevron-right"></i>
+      </a>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="empty-state">
+      <i class="bi bi-inbox"></i>
+      <p>Aucune transaction trouvée{% if filter_type or filter_status %} avec ces filtres{% endif %}.</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

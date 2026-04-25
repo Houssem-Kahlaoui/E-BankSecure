@@ -1,0 +1,121 @@
+﻿{% extends "base.html" %}
+{% block title %}Mes comptes — Secure e-Bank{% endblock %}
+{% block page_title %}Mes comptes{% endblock %}
+
+{% block content %}
+<div class="fade-in">
+  <div class="page-header">
+    <div class="page-header-info">
+      <h2>Mes comptes bancaires</h2>
+      <p>Gérez et consultez vos comptes</p>
+    </div>
+    <a href="{{ url_for('customer_transfer') }}" class="btn btn-primary">
+      <i class="bi bi-arrow-left-right"></i> Effectuer un virement
+    </a>
+  </div>
+
+  {% if accounts %}
+  <div class="grid-2" style="margin-bottom:28px">
+    {% for acc in accounts %}
+    <div class="account-card {{ 'type-epargne' if acc.account_type=='epargne' }}">
+      {# Card type bar (handled by ::before in CSS) #}
+
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px">
+        <div>
+          <div class="account-type-label">
+            {{ 'Compte Courant' if acc.account_type=='courant' else 'Compte Épargne' }}
+          </div>
+          <div style="margin-top:6px">
+            <span class="badge badge-{{ acc.status }}">
+              <i class="bi bi-{{ 'check-circle' if acc.status=='active' else 'snow2' if acc.status=='frozen' else 'x-circle' }}"></i>
+              {{ acc.status.title() }}
+            </span>
+          </div>
+        </div>
+        <div style="width:44px;height:44px;border-radius:12px;
+          background:{{ 'rgba(79,172,254,0.15)' if acc.account_type=='courant' else 'rgba(0,201,167,0.15)' }};
+          display:grid;place-items:center;font-size:20px;
+          color:{{ 'var(--blue)' if acc.account_type=='courant' else 'var(--teal)' }}">
+          <i class="bi bi-{{ 'credit-card-2-front' if acc.account_type=='courant' else 'piggy-bank' }}"></i>
+        </div>
+      </div>
+
+      <div class="account-balance">
+        {{ '{:,.2f}'.format(acc.balance) }}
+        <span class="currency"> DNT</span>
+      </div>
+
+      <div class="divider" style="margin:16px 0"></div>
+
+      <div class="account-number-display">
+        <div>
+          <div style="font-size:11px;color:var(--text-muted);margin-bottom:3px">Numéro de compte</div>
+          <span class="acc-number">{{ acc.account_number }}</span>
+        </div>
+        <button onclick="copyToClipboard('{{ acc.account_number }}')"
+                class="btn-icon" style="margin-left:auto" title="Copier">
+          <i class="bi bi-copy"></i>
+        </button>
+      </div>
+
+      <div style="margin-top:12px;font-size:11px;color:var(--text-muted)">
+        <i class="bi bi-calendar3"></i> Ouvert le {{ acc.created_at[:10] }}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {# Account info cards #}
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><i class="bi bi-info-circle" style="color:var(--blue)"></i> Compte Courant</div>
+      </div>
+      <ul style="list-style:none;display:flex;flex-direction:column;gap:10px">
+        <li style="display:flex;gap:10px;font-size:13px;color:var(--text-muted)">
+          <i class="bi bi-check2-circle" style="color:var(--teal);margin-top:2px"></i>
+          Virements entrants et sortants libres
+        </li>
+        <li style="display:flex;gap:10px;font-size:13px;color:var(--text-muted)">
+          <i class="bi bi-check2-circle" style="color:var(--teal);margin-top:2px"></i>
+          Paiements de factures quotidiens
+        </li>
+        <li style="display:flex;gap:10px;font-size:13px;color:var(--text-muted)">
+          <i class="bi bi-check2-circle" style="color:var(--teal);margin-top:2px"></i>
+          Aucun frais de tenue de compte
+        </li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><i class="bi bi-piggy-bank" style="color:var(--teal)"></i> Compte Épargne</div>
+      </div>
+      <ul style="list-style:none;display:flex;flex-direction:column;gap:10px">
+        <li style="display:flex;gap:10px;font-size:13px;color:var(--text-muted)">
+          <i class="bi bi-check2-circle" style="color:var(--teal);margin-top:2px"></i>
+          Rémunération des dépôts
+        </li>
+        <li style="display:flex;gap:10px;font-size:13px;color:var(--text-muted)">
+          <i class="bi bi-check2-circle" style="color:var(--teal);margin-top:2px"></i>
+          Idéal pour vos projets à long terme
+        </li>
+        <li style="display:flex;gap:10px;font-size:13px;color:var(--text-muted)">
+          <i class="bi bi-check2-circle" style="color:var(--teal);margin-top:2px"></i>
+          Plafond de retrait mensuel
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  {% else %}
+  <div class="empty-state" style="min-height:400px;display:grid;place-items:center">
+    <div>
+      <i class="bi bi-wallet2" style="font-size:64px;color:var(--text-dim);display:block;margin-bottom:16px"></i>
+      <p style="font-size:16px;font-weight:600">Aucun compte trouvé</p>
+      <p style="font-size:13px;margin-top:8px">Contactez un gestionnaire pour ouvrir un compte.</p>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

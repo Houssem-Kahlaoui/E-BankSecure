@@ -1,0 +1,158 @@
+﻿{% extends "base.html" %}
+{% block title %}Prêts — Secure e-Bank{% endblock %}
+{% block page_title %}Demandes de prêts{% endblock %}
+
+{% block content %}
+<div class="fade-in">
+  <div class="page-header">
+    <div class="page-header-info">
+      <h2>Mes demandes de prêts</h2>
+      <p>Soumettez et suivez vos demandes de crédit</p>
+    </div>
+    <button class="btn btn-primary" onclick="openModal('loanModal')">
+      <i class="bi bi-plus-circle"></i> Nouvelle demande
+    </button>
+  </div>
+
+  {# ── Loan status summary ── #}
+  <div class="stats-grid" style="margin-bottom:28px">
+    <div class="stat-card">
+      <div class="stat-icon amber"><i class="bi bi-hourglass-split"></i></div>
+      <div class="stat-info">
+        <div class="stat-value">{{ loans|selectattr('status','equalto','pending')|list|length }}</div>
+        <div class="stat-label">En attente</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon teal"><i class="bi bi-check-circle"></i></div>
+      <div class="stat-info">
+        <div class="stat-value">{{ loans|selectattr('status','equalto','approved')|list|length }}</div>
+        <div class="stat-label">Approuvés</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon danger"><i class="bi bi-x-circle"></i></div>
+      <div class="stat-info">
+        <div class="stat-value">{{ loans|selectattr('status','equalto','rejected')|list|length }}</div>
+        <div class="stat-label">Refusés</div>
+      </div>
+    </div>
+  </div>
+
+  {# ── Loans list ── #}
+  {% if loans %}
+  <div style="display:flex;flex-direction:column;gap:16px">
+    {% for loan in loans %}
+    <div class="card" style="border-color:{{
+      'rgba(0,201,167,0.25)' if loan.status=='approved' else
+      'rgba(255,71,87,0.25)' if loan.status=='rejected' else
+      'rgba(245,158,11,0.25)' }}">
+
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px">
+        <div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+            <span class="badge badge-{{ loan.status }}">
+              {% if loan.status=='pending' %}<i class="bi bi-hourglass-split"></i> En attente
+              {% elif loan.status=='approved' %}<i class="bi bi-check-circle"></i> Approuvé
+              {% else %}<i class="bi bi-x-circle"></i> Refusé{% endif %}
+            </span>
+            <span style="font-size:12px;color:var(--text-muted)">Demande #{{ loan.id }}</span>
+          </div>
+
+          <div style="font-size:28px;font-weight:800;letter-spacing:-1px">
+            {{ '{:,.0f}'.format(loan.amount) }} DNT
+          </div>
+          <div style="font-size:13px;color:var(--text-muted);margin-top:4px">
+            Sur {{ loan.duration_months }} mois
+            (≈ {{ '{:,.0f}'.format(loan.amount / loan.duration_months) }} DNT/mois)
+          </div>
+        </div>
+
+        <div style="text-align:right;font-size:12px;color:var(--text-muted)">
+          <div><i class="bi bi-calendar3"></i> {{ loan.created_at[:10] }}</div>
+          {% if loan.reviewed_at %}
+          <div style="margin-top:4px"><i class="bi bi-check2"></i> Traité le {{ loan.reviewed_at[:10] }}</div>
+          {% endif %}
+        </div>
+      </div>
+
+      {% if loan.purpose %}
+      <div style="margin-top:14px;padding:10px 14px;background:rgba(255,255,255,0.03);
+                  border-radius:8px;font-size:13px;color:var(--text-muted)">
+        <i class="bi bi-chat-left-text"></i> <strong>Objet :</strong> {{ loan.purpose }}
+      </div>
+      {% endif %}
+
+      {% if loan.comment %}
+      <div style="margin-top:8px;padding:10px 14px;background:rgba(255,255,255,0.03);
+                  border-radius:8px;font-size:13px;color:var(--text-muted)">
+        <i class="bi bi-person-badge"></i> <strong>Commentaire gestionnaire :</strong> {{ loan.comment }}
+      </div>
+      {% endif %}
+
+      {% if loan.status == 'approved' %}
+      <div class="progress-bar" style="margin-top:16px">
+        <div class="progress-fill" style="width:100%"></div>
+      </div>
+      <div style="text-align:right;font-size:11px;color:var(--teal);margin-top:4px">Montant crédité sur votre compte</div>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+
+  {% else %}
+  <div class="empty-state card" style="min-height:300px;display:grid;place-items:center">
+    <div>
+      <i class="bi bi-cash-coin" style="font-size:56px;color:var(--text-dim);display:block;margin-bottom:16px"></i>
+      <p style="font-size:15px;font-weight:600">Aucune demande de prêt</p>
+      <p style="font-size:13px;margin-top:8px;color:var(--text-muted)">Cliquez sur "Nouvelle demande" pour commencer.</p>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+
+{# ── New Loan Modal ── #}
+<div class="modal-overlay" id="loanModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title"><i class="bi bi-cash-coin" style="color:var(--blue)"></i> Nouvelle demande de prêt</div>
+      <button class="modal-close" onclick="closeModal('loanModal')"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <form method="POST" action="{{ url_for('customer_loans') }}">
+      <div class="form-group">
+        <label class="form-label">Montant souhaité (DNT) <span style="color:var(--danger)">*</span></label>
+        <input type="number" name="amount" class="form-control" placeholder="Ex: 500000"
+               min="10000" max="10000000" step="1000" required>
+        <div class="form-hint">Minimum : 10 000 DNT — Maximum : 10 000 000 DNT</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Durée de remboursement (mois) <span style="color:var(--danger)">*</span></label>
+        <select name="duration" class="form-control" required>
+          <option value="">-- Sélectionner --</option>
+          <option value="12">12 mois (1 an)</option>
+          <option value="24">24 mois (2 ans)</option>
+          <option value="36">36 mois (3 ans)</option>
+          <option value="60">60 mois (5 ans)</option>
+          <option value="84">84 mois (7 ans)</option>
+          <option value="120">120 mois (10 ans)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Objet du prêt</label>
+        <input type="text" name="purpose" class="form-control"
+               placeholder="Ex: Achat véhicule, construction, études..." maxlength="200">
+      </div>
+      <div style="background:rgba(79,172,254,0.07);border:1px solid rgba(79,172,254,0.15);
+                  border-radius:10px;padding:12px 14px;margin-bottom:16px;font-size:13px;color:var(--text-muted)">
+        <i class="bi bi-info-circle" style="color:var(--blue)"></i>
+        La décision sera prise par un gestionnaire dans les meilleurs délais.
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" onclick="closeModal('loanModal')">Annuler</button>
+        <button type="submit" class="btn btn-primary"><i class="bi bi-send"></i> Soumettre</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

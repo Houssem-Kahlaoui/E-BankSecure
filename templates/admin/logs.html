@@ -1,0 +1,105 @@
+﻿{% extends "base.html" %}
+{% block title %}Journaux d'audit — Admin Secure e-Bank{% endblock %}
+{% block page_title %}Journaux d'audit{% endblock %}
+
+{% block content %}
+<div class="fade-in">
+  <div class="page-header">
+    <div class="page-header-info">
+      <h2>Journaux d'audit</h2>
+      <p>{{ logs|length }} entrée(s) — 300 dernières actions</p>
+    </div>
+  </div>
+
+  <div style="margin-bottom:16px">
+    <input type="text" id="logSearch" class="form-control" placeholder="🔍 Rechercher action, utilisateur, IP..."
+           oninput="filterLogs(this.value)" style="max-width:380px">
+  </div>
+
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Action</th>
+          <th>Utilisateur</th>
+          <th>Détails</th>
+          <th>Adresse IP</th>
+          <th>Date & Heure</th>
+        </tr>
+      </thead>
+      <tbody id="logsBody">
+        {% for log in logs %}
+        <tr class="log-row">
+          <td class="td-muted">{{ log.id }}</td>
+          <td>
+            {% set color_map = {
+              'LOGIN': 'var(--teal)', 'LOGOUT': 'var(--text-muted)',
+              'APPROVE_TRANSFER': 'var(--teal)', 'REJECT_TRANSFER': 'var(--danger)',
+              'APPROVE_LOAN': 'var(--teal)',  'REJECT_LOAN': 'var(--danger)',
+              'CREATE_USER': 'var(--blue)',   'DELETE_USER': 'var(--danger)',
+              'DEACTIVATE_USER': 'var(--amber)', 'ACTIVATE_USER': 'var(--teal)',
+              'FREEZE_ACCOUNT': 'var(--blue)', 'UNFREEZE_ACCOUNT': 'var(--teal)',
+              'CREDIT_ACCOUNT': 'var(--teal)', 'TRANSFER_REQUEST': 'var(--blue)',
+              'SYSTEM_INIT': 'var(--purple)'
+            } %}
+            <span style="display:inline-flex;align-items:center;gap:5px;
+                         font-size:11px;font-weight:700;
+                         color:{{ color_map.get(log.action, 'var(--text-muted)') }};
+                         background:rgba(255,255,255,0.04);
+                         padding:3px 10px;border-radius:20px;
+                         border:1px solid {{ color_map.get(log.action,'var(--border)') }}55">
+              {% set icon_map = {
+                'LOGIN':'box-arrow-in-right','LOGOUT':'box-arrow-right',
+                'APPROVE_TRANSFER':'check-circle','REJECT_TRANSFER':'x-circle',
+                'APPROVE_LOAN':'check-circle','REJECT_LOAN':'x-circle',
+                'CREATE_USER':'person-plus','DELETE_USER':'person-x',
+                'DEACTIVATE_USER':'person-dash','ACTIVATE_USER':'person-check',
+                'FREEZE_ACCOUNT':'snow2','UNFREEZE_ACCOUNT':'check2',
+                'CREDIT_ACCOUNT':'plus-circle','TRANSFER_REQUEST':'arrow-left-right',
+                'SYSTEM_INIT':'gear'
+              } %}
+              <i class="bi bi-{{ icon_map.get(log.action,'activity') }}"></i>
+              {{ log.action.replace('_',' ') }}
+            </span>
+          </td>
+          <td>
+            {% if log.full_name %}
+            <div style="font-weight:600;font-size:13px">{{ log.full_name }}</div>
+            <div class="td-muted">{{ log.email }}</div>
+            {% else %}
+            <span class="td-muted">Système</span>
+            {% endif %}
+          </td>
+          <td style="font-size:12px;color:var(--text-muted);max-width:220px;
+                     overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+            {{ log.details or '—' }}
+          </td>
+          <td>
+            <code style="font-size:11px;color:var(--text-muted);
+                         background:rgba(255,255,255,0.04);padding:2px 8px;border-radius:6px">
+              {{ log.ip_address or '—' }}
+            </code>
+          </td>
+          <td class="td-muted" style="font-size:12px;white-space:nowrap">
+            {{ log.created_at[:16] }}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% if not logs %}
+    <div class="empty-state"><i class="bi bi-journal-x"></i><p>Aucun journal disponible.</p></div>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+function filterLogs(q) {
+  q = q.toLowerCase();
+  document.querySelectorAll('.log-row').forEach(row => {
+    row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+  });
+}
+</script>
+{% endblock %}

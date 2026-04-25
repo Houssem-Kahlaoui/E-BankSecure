@@ -1,0 +1,135 @@
+﻿{% extends "base.html" %}
+{% block title %}Virement — Secure e-Bank{% endblock %}
+{% block page_title %}Effectuer un virement{% endblock %}
+{% block extra_css %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="fade-in">
+  <div class="page-header">
+    <div class="page-header-info">
+      <h2>Nouveau virement</h2>
+      <p>Transférez des fonds vers un autre compte Secure e-Bank</p>
+    </div>
+  </div>
+
+  <div class="grid-2" style="align-items:start">
+    {# ── Transfer form ── #}
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><i class="bi bi-send" style="color:var(--blue)"></i> Détails du virement</div>
+      </div>
+
+      {% if accounts %}
+      <form method="POST" action="{{ url_for('customer_transfer') }}" id="transferForm">
+
+        <div class="form-group">
+          <label class="form-label">Compte source <span style="color:var(--danger)">*</span></label>
+          <select name="from_account" id="from_account" class="form-control" required>
+            <option value="">-- Sélectionner un compte --</option>
+            {% for acc in accounts %}
+            <option value="{{ acc.id }}" data-balance="{{ acc.balance }}">
+              {{ 'Courant' if acc.account_type=='courant' else 'Épargne' }} —
+              {{ acc.account_number }} —
+              {{ '{:,.2f}'.format(acc.balance) }} DNT
+            </option>
+            {% endfor %}
+          </select>
+          <div class="form-hint" id="balanceHint"></div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Numéro de compte destinataire <span style="color:var(--danger)">*</span></label>
+          <input type="text" name="to_account_number" id="to_account_number"
+                 class="form-control" placeholder="DZ000000000000" maxlength="14"
+                 autocomplete="off" required>
+          <div id="lookupInfo"></div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Montant (DNT) <span style="color:var(--danger)">*</span></label>
+          <input type="number" name="amount" id="amount" class="form-control"
+                 placeholder="0.00" min="1" step="0.01" required>
+          <div id="amountWarn" class="form-hint"></div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Motif / Description</label>
+          <input type="text" name="description" class="form-control"
+                 placeholder="Ex: Remboursement loyer" maxlength="120">
+        </div>
+
+        <div style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);
+                    border-radius:10px;padding:14px;margin-bottom:20px;font-size:13px;
+                    color:var(--text-muted);display:flex;gap:10px">
+          <i class="bi bi-exclamation-triangle" style="color:var(--amber);flex-shrink:0;margin-top:2px"></i>
+          <span>Les virements sont soumis à validation par un gestionnaire avant exécution.</span>
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;padding:14px">
+          <i class="bi bi-send"></i> Soumettre le virement
+        </button>
+      </form>
+      {% else %}
+      <div class="empty-state">
+        <i class="bi bi-exclamation-circle"></i>
+        <p>Aucun compte actif disponible pour effectuer un virement.</p>
+      </div>
+      {% endif %}
+    </div>
+
+    {# ── Info panel ── #}
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <div class="card">
+        <div class="card-title" style="margin-bottom:14px">
+          <i class="bi bi-info-circle" style="color:var(--blue)"></i> Comment ça marche
+        </div>
+        <div style="display:flex;flex-direction:column;gap:14px">
+          {% for step, icon, txt in [
+            ('1','search','Saisissez le numéro du compte destinataire'),
+            ('2','eye','Le titulaire s\'affiche automatiquement'),
+            ('3','hourglass-split','Le virement est soumis à un gestionnaire'),
+            ('4','check-circle','Vous êtes notifié dès l\'approbation')
+          ] %}
+          <div style="display:flex;gap:12px;align-items:flex-start">
+            <div style="width:28px;height:28px;border-radius:50%;background:rgba(79,172,254,0.15);
+                        color:var(--blue);display:grid;place-items:center;font-size:12px;font-weight:700;flex-shrink:0">
+              {{ step }}
+            </div>
+            <div style="font-size:13px;color:var(--text-muted);margin-top:4px">{{ txt }}</div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="card" style="border-color:rgba(0,201,167,0.2)">
+        <div class="card-title" style="margin-bottom:14px;color:var(--teal)">
+          <i class="bi bi-shield-check"></i> Sécurité
+        </div>
+        <p style="font-size:13px;color:var(--text-muted);line-height:1.6">
+          Tous vos virements sont chiffrés et vérifiés par notre équipe avant exécution. En cas de doute, contactez votre gestionnaire.
+        </p>
+      </div>
+
+      <div class="card" style="border-color:rgba(245,158,11,0.2)">
+        <div class="card-title" style="margin-bottom:10px;color:var(--amber)">
+          <i class="bi bi-clock"></i> Délais de traitement
+        </div>
+        <div style="font-size:13px;color:var(--text-muted)">
+          <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)">
+            <span>Virements internes</span><span style="color:var(--teal);font-weight:600">24h ouvrées</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:6px 0">
+            <span>Montants importants</span><span style="color:var(--amber);font-weight:600">48h ouvrées</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/transfer.js') }}"></script>
+{% endblock %}

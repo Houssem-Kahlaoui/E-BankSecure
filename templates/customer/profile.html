@@ -1,0 +1,163 @@
+﻿{% extends "base.html" %}
+{% block title %}Profil — Secure e-Bank{% endblock %}
+{% block page_title %}Mon profil{% endblock %}
+
+{% block content %}
+<div class="fade-in">
+  <div class="page-header">
+    <div class="page-header-info">
+      <h2>Mon profil</h2>
+      <p>Gérez vos informations personnelles et la sécurité</p>
+    </div>
+  </div>
+
+  <div class="grid-2" style="align-items:start">
+
+    {# ── Personal info ── #}
+    <div style="display:flex;flex-direction:column;gap:20px">
+
+      {# Profile header card #}
+      <div class="card" style="text-align:center;padding:36px">
+        <div style="width:80px;height:80px;border-radius:50%;
+                    background:linear-gradient(135deg,var(--blue),var(--purple));
+                    display:grid;place-items:center;font-size:32px;font-weight:800;
+                    color:#fff;margin:0 auto 16px;
+                    box-shadow:0 8px 24px rgba(79,172,254,0.4)">
+          {{ user.full_name[0]|upper }}
+        </div>
+        <div style="font-size:20px;font-weight:800;letter-spacing:-0.5px">{{ user.full_name }}</div>
+        <div style="margin-top:6px;display:flex;justify-content:center">
+          <span class="badge badge-customer"><i class="bi bi-person-check"></i> Client Secure e-Bank</span>
+        </div>
+        <div style="margin-top:12px;font-size:13px;color:var(--text-muted)">
+          <i class="bi bi-calendar3"></i> Membre depuis {{ user.created_at[:10] }}
+        </div>
+      </div>
+
+      {# Edit info form #}
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><i class="bi bi-person-gear" style="color:var(--blue)"></i> Informations personnelles</div>
+        </div>
+        <form method="POST" action="{{ url_for('customer_profile') }}">
+          <input type="hidden" name="action" value="update_info">
+          <div class="form-group">
+            <label class="form-label">Nom complet</label>
+            <input type="text" name="full_name" class="form-control"
+                   value="{{ user.full_name }}" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email</label>
+            <input type="email" class="form-control" value="{{ user.email }}" disabled
+                   style="opacity:0.5;cursor:not-allowed">
+            <div class="form-hint">L'email ne peut pas être modifié</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Téléphone</label>
+            <input type="tel" name="phone" class="form-control"
+                   value="{{ user.phone or '' }}" placeholder="+213 5XX XXX XXX">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Adresse postale</label>
+            <input type="text" name="address" class="form-control"
+                   value="{{ user.address or '' }}" placeholder="Rue, Ville, Wilaya">
+          </div>
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-save"></i> Enregistrer
+          </button>
+        </form>
+      </div>
+    </div>
+
+    {# ── Security section ── #}
+    <div style="display:flex;flex-direction:column;gap:20px">
+
+      {# Change password #}
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><i class="bi bi-shield-lock" style="color:var(--teal)"></i> Changer le mot de passe</div>
+        </div>
+        <form method="POST" action="{{ url_for('customer_profile') }}">
+          <input type="hidden" name="action" value="change_password">
+          <div class="form-group">
+            <label class="form-label">Mot de passe actuel</label>
+            <input type="password" name="current_password" class="form-control"
+                   placeholder="Votre mot de passe actuel" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Nouveau mot de passe</label>
+            <input type="password" name="new_password" id="new_pw" class="form-control"
+                   placeholder="Min. 6 caractères" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Confirmer le nouveau mot de passe</label>
+            <input type="password" name="confirm_password" id="confirm_pw" class="form-control"
+                   placeholder="Répéter" required>
+          </div>
+          <div id="pwMsg" style="font-size:12px;margin-bottom:14px;min-height:14px"></div>
+          <button type="submit" class="btn btn-success">
+            <i class="bi bi-lock-fill"></i> Mettre à jour le mot de passe
+          </button>
+        </form>
+      </div>
+
+      {# Security info #}
+      <div class="card" style="border-color:rgba(0,201,167,0.2)">
+        <div class="card-title" style="margin-bottom:14px;color:var(--teal)">
+          <i class="bi bi-shield-check"></i> Conseils de sécurité
+        </div>
+        <ul style="list-style:none;display:flex;flex-direction:column;gap:10px">
+          {% for tip in [
+            'Utilisez un mot de passe unique d\'au moins 12 caractères',
+            'Ne partagez jamais vos identifiants avec personne',
+            'Déconnectez-vous après chaque session publique',
+            'Vérifiez régulièrement votre historique de transactions'
+          ] %}
+          <li style="display:flex;gap:10px;font-size:13px;color:var(--text-muted)">
+            <i class="bi bi-check2-circle" style="color:var(--teal);flex-shrink:0;margin-top:2px"></i>
+            {{ tip }}
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+
+      {# Account info card #}
+      <div class="card">
+        <div class="card-title" style="margin-bottom:14px">
+          <i class="bi bi-info-circle" style="color:var(--blue)"></i> Informations du compte
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          {% for label, value in [
+            ('ID Client', '#' ~ user.id),
+            ('Rôle', user.role.title()),
+            ('Statut', 'Actif' if user.is_active else 'Inactif'),
+            ('Date d\'inscription', user.created_at[:10])
+          ] %}
+          <div style="display:flex;justify-content:space-between;padding:8px 0;
+                      border-bottom:1px solid var(--border);font-size:13px">
+            <span style="color:var(--text-muted)">{{ label }}</span>
+            <span style="font-weight:600">{{ value }}</span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const np = document.getElementById('new_pw');
+  const cp = document.getElementById('confirm_pw');
+  const msg= document.getElementById('pwMsg');
+  function check() {
+    if (!cp.value) { msg.textContent=''; return; }
+    if (np.value === cp.value) {
+      msg.innerHTML='<span style="color:var(--teal)"><i class="bi bi-check-circle"></i> Correspondance OK</span>';
+    } else {
+      msg.innerHTML='<span style="color:var(--danger)"><i class="bi bi-x-circle"></i> Ne correspondent pas</span>';
+    }
+  }
+  np?.addEventListener('input', check);
+  cp?.addEventListener('input', check);
+</script>
+{% endblock %}

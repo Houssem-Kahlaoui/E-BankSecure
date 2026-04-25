@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Secure e-Bank — Votre banque en ligne sécurisée, rapide et moderne en Tunisie.">
+  <title>{% block title %}Secure e-Bank{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+{% if session.get('user_id') %}
+{# ═══════════════ AUTHENTICATED LAYOUT ═══════════════ #}
+<div class="app-layout">
+
+  {# ── Sidebar ── #}
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <a href="{{ url_for('home_redirect') }}" class="logo">
+        <div class="logo-icon"><i class="bi bi-bank2"></i></div>
+        <span class="logo-text">Secure e-Bank</span>
+      </a>
+      <button class="sidebar-toggle" id="sidebarToggle" title="Réduire">
+        <i class="bi bi-chevron-left"></i>
+      </button>
+    </div>
+
+    <nav class="sidebar-nav">
+      {% if session.get('role') == 'customer' %}
+        <div class="sidebar-section-title">Menu</div>
+        <a href="{{ url_for('customer_dashboard') }}" class="nav-link"><i class="bi bi-grid-1x2"></i><span class="nav-label">Tableau de bord</span></a>
+        <a href="{{ url_for('customer_accounts') }}" class="nav-link"><i class="bi bi-credit-card-2-front"></i><span class="nav-label">Mes comptes</span></a>
+        <a href="{{ url_for('customer_transfer') }}" class="nav-link"><i class="bi bi-arrow-left-right"></i><span class="nav-label">Virement</span></a>
+        <a href="{{ url_for('customer_history') }}" class="nav-link"><i class="bi bi-clock-history"></i><span class="nav-label">Historique</span></a>
+        <a href="{{ url_for('customer_loans') }}" class="nav-link"><i class="bi bi-cash-coin"></i><span class="nav-label">Prêts</span></a>
+        <div class="sidebar-section-title">Compte</div>
+        <a href="{{ url_for('customer_profile') }}" class="nav-link"><i class="bi bi-person-circle"></i><span class="nav-label">Profil</span></a>
+
+      {% elif session.get('role') == 'gestionnaire' %}
+        <div class="sidebar-section-title">Gestion</div>
+        <a href="{{ url_for('gestionnaire_dashboard') }}" class="nav-link"><i class="bi bi-speedometer2"></i><span class="nav-label">Tableau de bord</span></a>
+        <a href="{{ url_for('gestionnaire_pending') }}" class="nav-link">
+          <i class="bi bi-hourglass-split"></i><span class="nav-label">Virements en attente</span>
+          {% if stats is defined and stats.pending_transfers > 0 %}
+          <span class="nav-badge">{{ stats.pending_transfers }}</span>
+          {% endif %}
+        </a>
+        <a href="{{ url_for('gestionnaire_loans') }}" class="nav-link"><i class="bi bi-cash-stack"></i><span class="nav-label">Demandes de prêts</span></a>
+        <a href="{{ url_for('gestionnaire_accounts') }}" class="nav-link"><i class="bi bi-wallet2"></i><span class="nav-label">Comptes clients</span></a>
+
+      {% elif session.get('role') == 'admin' %}
+        <div class="sidebar-section-title">Administration</div>
+        <a href="{{ url_for('admin_dashboard') }}" class="nav-link"><i class="bi bi-bar-chart-line"></i><span class="nav-label">Tableau de bord</span></a>
+        <a href="{{ url_for('admin_users') }}" class="nav-link"><i class="bi bi-people"></i><span class="nav-label">Utilisateurs</span></a>
+        <a href="{{ url_for('admin_accounts') }}" class="nav-link"><i class="bi bi-wallet2"></i><span class="nav-label">Comptes bancaires</span></a>
+        <a href="{{ url_for('admin_transactions') }}" class="nav-link"><i class="bi bi-arrow-left-right"></i><span class="nav-label">Transactions</span></a>
+        <a href="{{ url_for('admin_logs') }}" class="nav-link"><i class="bi bi-journal-text"></i><span class="nav-label">Journaux d'audit</span></a>
+      {% endif %}
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-info">
+        <div class="avatar">{{ session.get('full_name','U')[0]|upper }}</div>
+        <div class="user-details">
+          <span class="user-name">{{ session.get('full_name', '') }}</span>
+          <span class="user-role badge-{{ session.get('role','') }}">{{ session.get('role','').title() }}</span>
+        </div>
+      </div>
+      <a href="{{ url_for('logout') }}" class="logout-btn" title="Déconnexion">
+        <i class="bi bi-box-arrow-right"></i>
+      </a>
+    </div>
+  </aside>
+
+  {# ── Main Content ── #}
+  <main class="main-content" id="mainContent">
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="menu-btn" id="menuBtn"><i class="bi bi-list"></i></button>
+        <h1 class="page-title">{% block page_title %}{% endblock %}</h1>
+      </div>
+      <div class="topbar-right">
+        {% if session.get('role') == 'customer' %}
+        <button class="notif-btn" id="notifBtn" onclick="toggleNotifications()">
+          <i class="bi bi-bell"></i>
+          {% if notifications_count > 0 %}
+          <span class="notif-badge">{{ notifications_count }}</span>
+          {% endif %}
+        </button>
+        {% endif %}
+        <div class="topbar-user">
+          <div class="avatar-sm">{{ session.get('full_name','U')[0]|upper }}</div>
+          <span>{{ session.get('full_name','') }}</span>
+        </div>
+      </div>
+    </header>
+
+    {# Flash messages #}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="flash-container">
+      {% for cat, msg in messages %}
+      <div class="flash flash-{{ cat }}">
+        <i class="bi bi-{{ 'check-circle' if cat=='success' else 'x-circle' if cat=='danger' else 'exclamation-triangle' if cat=='warning' else 'info-circle' }}"></i>
+        {{ msg }}
+        <button class="flash-close" onclick="this.parentElement.remove()"><i class="bi bi-x"></i></button>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <div class="content-wrapper">
+      {% block content %}{% endblock %}
+    </div>
+  </main>
+</div>
+
+{# Notification panel for customers #}
+{% if session.get('role') == 'customer' %}
+<div class="notif-panel" id="notifPanel">
+  <div class="notif-panel-header">
+    <span><i class="bi bi-bell"></i> Notifications</span>
+    <button onclick="toggleNotifications()" class="btn-icon" style="font-size:14px">
+      <i class="bi bi-x-lg"></i>
+    </button>
+  </div>
+  {% if notifications is defined and notifications %}
+    {% for n in notifications %}
+    <div class="notif-item">
+      <div class="notif-title">{{ n.title }}</div>
+      <div class="notif-msg">{{ n.message }}</div>
+      <div class="notif-time"><i class="bi bi-clock"></i> {{ n.created_at[:16] }}</div>
+    </div>
+    {% endfor %}
+  {% else %}
+    <div class="notif-empty">
+      <i class="bi bi-bell-slash" style="font-size:36px;margin-bottom:8px;display:block"></i>
+      Aucune nouvelle notification
+    </div>
+  {% endif %}
+</div>
+{% endif %}
+
+{% else %}
+{# ═══════════════ PUBLIC LAYOUT ═══════════════ #}
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+<div class="flash-container flash-fixed">
+  {% for cat, msg in messages %}
+  <div class="flash flash-{{ cat }}">
+    <i class="bi bi-{{ 'check-circle' if cat=='success' else 'x-circle' if cat=='danger' else 'exclamation-triangle' if cat=='warning' else 'info-circle' }}"></i>
+    {{ msg }}
+    <button class="flash-close" onclick="this.parentElement.remove()"><i class="bi bi-x"></i></button>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+{% endwith %}
+{% block public_content %}{% endblock %}
+{% endif %}
+
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

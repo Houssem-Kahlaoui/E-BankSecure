@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+{% block title %}Admin — Secure e-Bank{% endblock %}
+{% block page_title %}Tableau de bord Admin{% endblock %}
+{% block extra_css %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="fade-in">
+  <div style="margin-bottom:28px">
+    <h2 style="font-size:24px;font-weight:800;letter-spacing:-0.5px">Administration système</h2>
+    <p style="color:var(--text-muted);font-size:13px;margin-top:4px">Vue globale de la plateforme Secure e-Bank</p>
+  </div>
+
+  {# ── KPI Grid ── #}
+  <div class="stats-grid">
+    <div class="stat-card" onclick="location.href='{{ url_for('admin_users') }}'">
+      <div class="stat-icon blue"><i class="bi bi-people"></i></div>
+      <div class="stat-info">
+        <div class="stat-value" data-count="{{ stats.total_customers }}">{{ stats.total_customers }}</div>
+        <div class="stat-label">Clients</div>
+      </div>
+    </div>
+    <div class="stat-card" onclick="location.href='{{ url_for('admin_users') }}'">
+      <div class="stat-icon purple"><i class="bi bi-person-badge"></i></div>
+      <div class="stat-info">
+        <div class="stat-value" data-count="{{ stats.total_gestionnaires }}">{{ stats.total_gestionnaires }}</div>
+        <div class="stat-label">Gestionnaires</div>
+      </div>
+    </div>
+    <div class="stat-card" onclick="location.href='{{ url_for('admin_accounts') }}'">
+      <div class="stat-icon teal"><i class="bi bi-wallet2"></i></div>
+      <div class="stat-info">
+        <div class="stat-value" data-count="{{ stats.total_accounts }}">{{ stats.total_accounts }}</div>
+        <div class="stat-label">Comptes bancaires</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon cyan"><i class="bi bi-cash-stack"></i></div>
+      <div class="stat-info">
+        <div class="stat-value" style="font-size:18px" data-count="{{ stats.total_balance }}">
+          {{ '{:,.0f}'.format(stats.total_balance) }}
+        </div>
+        <div class="stat-label">Total dépôts (DNT)</div>
+      </div>
+    </div>
+    <div class="stat-card" onclick="location.href='{{ url_for('admin_transactions') }}?status=pending'">
+      <div class="stat-icon amber"><i class="bi bi-hourglass-split"></i></div>
+      <div class="stat-info">
+        <div class="stat-value" data-count="{{ stats.pending_transactions }}">{{ stats.pending_transactions }}</div>
+        <div class="stat-label">Transactions en attente</div>
+      </div>
+    </div>
+    <div class="stat-card" onclick="location.href='{{ url_for('admin_transactions') }}?status=completed'">
+      <div class="stat-icon teal"><i class="bi bi-check-circle"></i></div>
+      <div class="stat-info">
+        <div class="stat-value" data-count="{{ stats.completed_transactions }}">{{ stats.completed_transactions }}</div>
+        <div class="stat-label">Transactions complétées</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon teal"><i class="bi bi-person-check"></i></div>
+      <div class="stat-info">
+        <div class="stat-value" data-count="{{ stats.active_accounts }}">{{ stats.active_accounts }}</div>
+        <div class="stat-label">Comptes actifs</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon danger"><i class="bi bi-snow2"></i></div>
+      <div class="stat-info">
+        <div class="stat-value" data-count="{{ stats.frozen_accounts }}">{{ stats.frozen_accounts }}</div>
+        <div class="stat-label">Comptes gelés</div>
+      </div>
+    </div>
+  </div>
+
+  {# ── Charts row ── #}
+  <div class="grid-2" style="margin-bottom:24px">
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title"><i class="bi bi-bar-chart-line" style="color:var(--blue)"></i> Volume mensuel (DNT)</div>
+          <div class="card-subtitle">6 derniers mois</div>
+        </div>
+      </div>
+      <div style="height:220px;position:relative">
+        <canvas id="monthlyChart"></canvas>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title"><i class="bi bi-pie-chart" style="color:var(--teal)"></i> Statut des comptes</div>
+          <div class="card-subtitle">Répartition actuelle</div>
+        </div>
+      </div>
+      <div style="height:220px;position:relative">
+        <canvas id="statusChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:24px">
+    <div class="card-header">
+      <div class="card-title"><i class="bi bi-graph-up" style="color:var(--teal)"></i> Nombre de transactions par mois</div>
+    </div>
+    <div style="height:180px;position:relative">
+      <canvas id="balanceChart"></canvas>
+    </div>
+  </div>
+
+  {# ── Quick links ── #}
+  <div class="grid-2">
+    <a href="{{ url_for('admin_users') }}" class="card" style="display:flex;gap:14px;align-items:center;cursor:pointer;text-decoration:none">
+      <div style="width:48px;height:48px;border-radius:12px;background:rgba(79,172,254,0.15);color:var(--blue);display:grid;place-items:center;font-size:20px;flex-shrink:0">
+        <i class="bi bi-people-fill"></i>
+      </div>
+      <div>
+        <div style="font-weight:700">Utilisateurs</div>
+        <div style="font-size:12px;color:var(--text-muted)">Créer, modifier, désactiver</div>
+      </div>
+      <i class="bi bi-arrow-right" style="margin-left:auto;color:var(--text-muted)"></i>
+    </a>
+    <a href="{{ url_for('admin_accounts') }}" class="card" style="display:flex;gap:14px;align-items:center;cursor:pointer;text-decoration:none">
+      <div style="width:48px;height:48px;border-radius:12px;background:rgba(0,201,167,0.15);color:var(--teal);display:grid;place-items:center;font-size:20px;flex-shrink:0">
+        <i class="bi bi-wallet2"></i>
+      </div>
+      <div>
+        <div style="font-weight:700">Comptes</div>
+        <div style="font-size:12px;color:var(--text-muted)">Créditer, geler, gérer</div>
+      </div>
+      <i class="bi bi-arrow-right" style="margin-left:auto;color:var(--text-muted)"></i>
+    </a>
+    <a href="{{ url_for('admin_transactions') }}" class="card" style="display:flex;gap:14px;align-items:center;cursor:pointer;text-decoration:none">
+      <div style="width:48px;height:48px;border-radius:12px;background:rgba(168,85,247,0.15);color:var(--purple);display:grid;place-items:center;font-size:20px;flex-shrink:0">
+        <i class="bi bi-arrow-left-right"></i>
+      </div>
+      <div>
+        <div style="font-weight:700">Transactions</div>
+        <div style="font-size:12px;color:var(--text-muted)">Toutes les opérations</div>
+      </div>
+      <i class="bi bi-arrow-right" style="margin-left:auto;color:var(--text-muted)"></i>
+    </a>
+    <a href="{{ url_for('admin_logs') }}" class="card" style="display:flex;gap:14px;align-items:center;cursor:pointer;text-decoration:none">
+      <div style="width:48px;height:48px;border-radius:12px;background:rgba(245,158,11,0.15);color:var(--amber);display:grid;place-items:center;font-size:20px;flex-shrink:0">
+        <i class="bi bi-journal-text"></i>
+      </div>
+      <div>
+        <div style="font-weight:700">Journaux d'audit</div>
+        <div style="font-size:12px;color:var(--text-muted)">Traçabilité des actions</div>
+      </div>
+      <i class="bi bi-arrow-right" style="margin-left:auto;color:var(--text-muted)"></i>
+    </a>
+  </div>
+</div>
+
+<script>
+  const monthlyData = {{ monthly_data | tojson }};
+  const accountStats = {
+    active: {{ stats.active_accounts }},
+    frozen: {{ stats.frozen_accounts }},
+    closed: {{ stats.closed_accounts }}
+  };
+</script>
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}

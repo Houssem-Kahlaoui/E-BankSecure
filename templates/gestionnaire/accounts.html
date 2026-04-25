@@ -1,0 +1,98 @@
+﻿{% extends "base.html" %}
+{% block title %}Comptes clients — Secure e-Bank{% endblock %}
+{% block page_title %}Comptes clients{% endblock %}
+
+{% block content %}
+<div class="fade-in">
+  <div class="page-header">
+    <div class="page-header-info">
+      <h2>Comptes clients</h2>
+      <p>{{ accounts|length }} compte(s) au total</p>
+    </div>
+  </div>
+
+  <div class="table-container">
+    <div class="table-header">
+      <div>
+        <div class="card-title">Tous les comptes</div>
+        <div class="card-subtitle">Cliquez sur Geler / Dégeler pour changer le statut</div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <input type="text" id="searchInput" class="form-control" placeholder="Rechercher..." style="max-width:220px"
+               oninput="filterTable(this.value)">
+      </div>
+    </div>
+
+    {% if accounts %}
+    <table id="accountsTable">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Titulaire</th>
+          <th>N° Compte</th>
+          <th>Type</th>
+          <th>Solde</th>
+          <th>Statut</th>
+          <th>Ouvert le</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for acc in accounts %}
+        <tr class="acc-row">
+          <td class="td-muted">{{ acc.id }}</td>
+          <td>
+            <div style="font-weight:600">{{ acc.full_name }}</div>
+            <div class="td-muted">{{ acc.email }}</div>
+          </td>
+          <td><span class="acc-number">{{ acc.account_number }}</span></td>
+          <td>
+            <span class="badge {{ 'badge-virement' if acc.account_type=='courant' else 'badge-depot' }}">
+              {{ 'Courant' if acc.account_type=='courant' else 'Épargne' }}
+            </span>
+          </td>
+          <td>
+            <span style="font-weight:700;color:{{ 'var(--danger)' if acc.balance < 10000 else 'var(--text)' }}">
+              {{ '{:,.2f}'.format(acc.balance) }} DNT
+            </span>
+          </td>
+          <td>
+            <span class="badge badge-{{ acc.status }}">
+              {% if acc.status=='active' %}<i class="bi bi-check-circle"></i> Actif
+              {% elif acc.status=='frozen' %}<i class="bi bi-snow2"></i> Gelé
+              {% else %}<i class="bi bi-x-circle"></i> Fermé{% endif %}
+            </span>
+          </td>
+          <td class="td-muted">{{ acc.created_at[:10] }}</td>
+          <td>
+            {% if acc.status != 'closed' %}
+            <form method="POST" action="{{ url_for('gestionnaire_freeze_account', acc_id=acc.id) }}" style="display:inline">
+              <button type="submit" class="btn btn-sm {{ 'btn-warning' if acc.status=='active' else 'btn-success' }}"
+                      onclick="return confirm('{{ 'Geler' if acc.status=='active' else 'Dégeler' }} ce compte ?')">
+                <i class="bi bi-{{ 'snow2' if acc.status=='active' else 'check-circle' }}"></i>
+                {{ 'Geler' if acc.status=='active' else 'Dégeler' }}
+              </button>
+            </form>
+            {% else %}
+            <span style="color:var(--text-dim);font-size:12px">Fermé</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state"><i class="bi bi-wallet2"></i><p>Aucun compte trouvé.</p></div>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+function filterTable(query) {
+  query = query.toLowerCase();
+  document.querySelectorAll('.acc-row').forEach(row => {
+    row.style.display = row.textContent.toLowerCase().includes(query) ? '' : 'none';
+  });
+}
+</script>
+{% endblock %}
