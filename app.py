@@ -1,4 +1,4 @@
-﻿"""
+"""
 app.py — Flask E-Banking application entry point.
 """
 import os
@@ -598,10 +598,21 @@ def api_monthly_stats():
 
 
 # ════════════════════════════════════════════════════════════════════════════
-#  ENTRY POINT
+#  ENTRY POINT & INITIALIZATION
 # ════════════════════════════════════════════════════════════════════════════
 
+with app.app_context():
+    try:
+        conn = db.get_db()
+        # Check if table exists (avoids re-initializing if already done)
+        exists = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='users'").fetchone()
+        conn.close()
+        if not exists:
+            db.init_db()
+            db.seed_demo_data()
+            print("Database initialized successfully.")
+    except Exception as e:
+        print(f"Failed to initialize database: {e}")
+
 if __name__ == '__main__':
-    db.init_db()
-    db.seed_demo_data()
     app.run(debug=True, port=5050, host='0.0.0.0')
